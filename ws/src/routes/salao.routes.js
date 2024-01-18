@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Salao = require('../models/salao');
 const Servico = require('../models/servico');
+const turf = require('@turf/turf');
 
 router.post('/', async (req, res) => {
     try {
@@ -22,7 +23,7 @@ router.get('/servicos/:salaoId', async (req, res) => {
 
         /* [{ label: 'Serviço', value: '23113213213'}] */
         res.json({
-            servicos: servicos.map(s => ({label: s.titulo, value: s._id})),
+            servicos: servicos.map(s => ({ label: s.titulo, value: s._id })),
         });
 
     } catch (err) {
@@ -32,8 +33,18 @@ router.get('/servicos/:salaoId', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
     try {
-        const salao = await Salao.findById(req.params.id);
-    } catch {
+        const salao = await Salao.findById(req.params.id).select(
+            'capa nome endereco.cidade geo.coordinates telefone'
+        );
+
+        //Distancia
+        const distance = turf.distance(
+            turf.point(salao.geo.coordinates),
+            turf.point([-21.887615, -50.960197])
+            );
+
+        res.json({ error: false, salao, distance })
+    } catch (err) {
         res.json({ error: true, message: err.message })
     }
 })
